@@ -5,7 +5,21 @@ Yet another cgroups plugin for collectd.
 
 You can hide cgroups with patterns, and later, monitoring memory.
 
-There is an official C plugin for collectd, but it handles only cpuacct values, and doesn't handle patterns.
+There is an official Cgroups C plugin for collectd, but it handles only cpuacct values, and doesn't handle patterns.
+
+Debian
+------
+
+This plugin is tested with Debian Jessie.
+
+One of your service has to active CPUAccounting :
+
+    [Service]
+    CPUAccounting=true
+
+After that, you will see something in the path :
+
+    ls /sys/fs/cgroup/cpu,cpuacct/system.slice/
 
 Configure
 ---------
