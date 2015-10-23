@@ -59,25 +59,38 @@ else:
 
     NAME = "cgroups"
     hides = set()
+    modes = set()
 
     def config_callback(conf):
         global hides
+        global modes
+        MODES = set(['user', 'system', 'total'])
         for node in conf.children:
-            logger("warn", "node %s" % str(node))
             if node.key.lower() == "hide":
                 hides.update(node.values)
                 logger('info', "Hidding cgroups %s" % ", ".join(node.values))
+            elif node.key.lower() == "mode":
+                aliens = set(node.values).difference(MODES)
+                if aliens:
+                    logger('warn', "Strange mode options : %s" %
+                           ", ".join(aliens))
+                modes = MODES.intersection(node.values)
             else:
                 logger('info', "unknown config key in cgroups module: %s"
                        % node.key)
+        if not(modes):
+            modes = set(['user', 'system'])
 
     def read_callback():
         global hides
+        global modes
         for group, values in find_cpuacct(hides):
-            for us in ['user', 'system']:
+            for us in modes:
                 val = collectd.Values(plugin=NAME, type="absolute")
-
-                val.values = [values[us]]
+                if us == 'total':
+                    val.values = [values['user'] + values['system']]
+                else:
+                    val.values = [values[us]]
                 val.type = "absolute"
                 val.type_instance = ".".join(group.replace('.', '_').split('/')
                                              + [us])

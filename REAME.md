@@ -5,6 +5,18 @@ Yet another cgroups plugin for collectd.
 
 You can hide cgroups with patterns, and later, monitoring memory.
 
+Configure
+---------
+
+### hide
+
+Path like pattern for hidding strange systemd stuff
+
+### mode
+
+user, system, total. Pick none or more.
+
+### Collectd configuration file
 
     LoadPlugin Python
 
@@ -15,6 +27,7 @@ You can hide cgroups with patterns, and later, monitoring memory.
         Import "cgroups"
         <Module cgroups>
                 hide "systemd-*" "dev-*" "*.mount" "udev-finish.service" "kmod-static-nodes.service" "irqbalance.service" "dbus.service" "debian-fixup.service" "networking.service" "system-getty.slice"
+                mode "total"
         </Module>
     </Plugin>
 
