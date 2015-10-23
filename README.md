@@ -5,6 +5,8 @@ Yet another cgroups plugin for collectd.
 
 You can hide cgroups with patterns, and later, monitoring memory.
 
+There is an official C plugin for collectd, but it handles only cpuacct values, and doesn't handle patterns.
+
 Configure
 ---------
 
