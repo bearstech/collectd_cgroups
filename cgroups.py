@@ -92,8 +92,8 @@ else:
                 else:
                     val.values = [values[us]]
                 val.type = "absolute"
-                val.type_instance = ".".join(group.replace('.', '_').split('/')
-                                             + [us])
+                val.plugin_instance = group
+                val.type_instance = us
                 val.dispatch()
 
     collectd.register_config(config_callback)
