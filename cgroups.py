@@ -4,10 +4,13 @@ from os.path import join
 from fnmatch import fnmatch
 
 
-class CPUAcct(object):
+class Cgroup(object):
     def __init__(self):
         self.bad_boys = set()
-        self.ROOT = '/sys/fs/cgroup/cpu,cpuacct/system.slice/'
+
+
+class CPUAcct(Cgroup):
+    ROOT = '/sys/fs/cgroup/cpu,cpuacct/system.slice/'
 
     def find(self, hides=[]):
         for root, dirs, files in walk(self.ROOT):
