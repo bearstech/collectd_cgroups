@@ -3,41 +3,40 @@ from os import walk
 from os.path import join
 from fnmatch import fnmatch
 
-bad_boys = set()
 
+class CPUAcct(object):
+    def __init__(self):
+        self.bad_boys = set()
+        self.ROOT = '/sys/fs/cgroup/cpu,cpuacct/system.slice/'
 
-def find_cpuacct(hides=[]):
-    global bad_boys
-    ROOT = '/sys/fs/cgroup/cpu,cpuacct/system.slice/'
-    for root, dirs, files in walk(ROOT):
-        if root == ROOT:
-            continue
-        if 'cpuacct.stat' in files:
-            top = root.split('/')[-1]
-            if top in bad_boys:
+    def find(self, hides=[]):
+        for root, dirs, files in walk(self.ROOT):
+            if root == self.ROOT:
                 continue
-            h = False
-            for hide in hides:
-                h = h or fnmatch(top, hide)
-            if h:
-                bad_boys.add(top)
-                continue
-            kv = dict()
-            for line in open(join(root, 'cpuacct.stat'), 'r').readlines():
-                k, v = line[:-1].split(' ')
-                v = int(v)
-                kv[k] = v
-            yield top, kv
+            if 'cpuacct.stat' in files:
+                top = root.split('/')[-1]
+                if top in self.bad_boys:
+                    continue
+                h = False
+                for hide in hides:
+                    h = h or fnmatch(top, hide)
+                if h:
+                    self.bad_boys.add(top)
+                    continue
+                kv = dict()
+                for line in open(join(root, 'cpuacct.stat'), 'r').readlines():
+                    k, v = line[:-1].split(' ')
+                    v = int(v)
+                    kv[k] = v
+                yield top, kv
 
-
-def cpuacct(group):
-    kv = dict()
-    for line in open('/sys/fs/cgroup/cpu,cpuacct/system.slice/%s/cpuacct.stat'
-                     % group, 'r'):
-        k, v = line[:-1].split(' ')
-        v = int(v)
-        kv[k] = v
-    return kv
+    def cpuacct(self, group):
+        kv = dict()
+        for line in open('%s%s/cpuacct.stat' % (self.ROOT, group), 'r'):
+            k, v = line[:-1].split(' ')
+            v = int(v)
+            kv[k] = v
+        return kv
 
 try:
     import collectd
@@ -60,6 +59,7 @@ else:
     NAME = "cgroups"
     hides = set()
     modes = set()
+    cpuacct = CPUAcct()
 
     def config_callback(conf):
         global hides
@@ -84,7 +84,8 @@ else:
     def read_callback():
         global hides
         global modes
-        for group, values in find_cpuacct(hides):
+        global cpuacct
+        for group, values in cpuacct.find(hides):
             for us in modes:
                 val = collectd.Values(plugin=NAME, type="absolute")
                 if us == 'total':
@@ -102,5 +103,6 @@ else:
 
 if __name__ == '__main__':
     import sys
-    for g, v in find_cpuacct(sys.argv[1:]):
+    cpuacct = CPUAcct()
+    for g, v in cpuacct.find(sys.argv[1:]):
         print(g)
