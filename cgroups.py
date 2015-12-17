@@ -1,12 +1,52 @@
 #!/usr/bin/env python
-from os import walk
-from os.path import join
+from os import walk, listdir
+from os.path import join, exists, splitext
 from fnmatch import fnmatch
+from subprocess import Popen, PIPE
+import re
+
+SPACES = re.compile("\s+")
+
+
+def lsblk():
+    p = Popen(['lsblk', '-b'], stdout=PIPE)
+    p.wait()
+    r = p.stdout.readlines()
+    keys = SPACES.split(r[0][:-1].lower())
+    print(keys)
+    blks = dict()
+    for l in r[1:]:
+        values = dict(zip(keys, SPACES.split(l[:-1])))
+        blks[values['maj:min']] = values
+    return blks
 
 
 class Cgroup(object):
     def __init__(self):
         self.bad_boys = set()
+
+
+class BlkIO(Cgroup):
+    ROOT = '/sys/fs/cgroup/blkio/system.slice/'
+
+    def find(self, hides=None):
+        if not exists(self.ROOT):
+            return
+        if hides is None:
+            hides = []
+        for f in listdir(self.ROOT):
+            if f in self.bad_boys:
+                continue
+            _, ext = splitext(f)
+            if ext not in ['.slice', '.service']:
+                continue
+            h = False
+            for hide in hides:
+                h = h or fnmatch(f, hide)
+            if h:
+                self.bad_boys.add(f)
+                continue
+            print(f)
 
 
 class CPUAcct(Cgroup):
@@ -106,6 +146,8 @@ else:
 
 if __name__ == '__main__':
     import sys
-    cpuacct = CPUAcct()
-    for g, v in cpuacct.find(sys.argv[1:]):
-        print(g)
+    #cpuacct = CPUAcct()
+    #for g, v in cpuacct.find(sys.argv[1:]):
+        #print(g)
+    blkio = BlkIO()
+    blkio.find(sys.argv[1:])
